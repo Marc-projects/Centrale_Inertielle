@@ -22,24 +22,23 @@ void collect_data(float* collected_values) {
     }
 }
 
-void compute_data(quaternion* q, float* values, uint32_t dt) {
+void compute_data(quaternion* q, float* values, uint8_t dt) {
     quaternion q_rotation_speed = {0.0f, values[3], values[4], values[5]}, q_temp;
 
     quaternion_product(q, &q_rotation_speed, &q_temp);
-    quaternion_scalar_product(&q_temp, 1.0f/2.0f * (float)dt * 1e-6, &q_temp);
+    quaternion_scalar_product(&q_temp, 1.0f/2.0f * (float)dt * 1e-3, &q_temp);
     quaternion_addition(q, &q_temp, q);
     quaternion_normalize(q, q);
 }
 
 void task_collect_compute(void* pvParameters) {
-    const TickType_t period = pdMS_TO_TICKS(1);
+    const TickType_t period = pdMS_TO_TICKS(TIME_CONSTANT_MS);
     TickType_t lastWakeTime = xTaskGetTickCount();
-    uint32_t dt;
+    const uint8_t dt = TIME_CONSTANT_MS;
     float values[6];
     quaternion q = {1.0f, 0.0f, 0.0f, 0.0f};
     
     while(1) {
-        dt = 1000;
         collect_data(values);
         
         compute_data(&q, values, dt);
