@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "main.h"
 
-#define TIME_PERIOD_CONSTANT_MS 1
+#define TIME_PERIOD_CONSTANT_MS 2
 
 void collect_data(float* collected_values, i2c_master_dev_handle_t device);
 
