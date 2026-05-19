@@ -46,7 +46,7 @@ void quaternion_normalize(quaternion* q, quaternion* out) {
 }
 
 void quaternion_recover_axis_angle(quaternion* q, axis_angle* aa) {
-    float angle, v1, v2, v3, norm, norm_inv;
+    float norm, norm_inv;
 
     norm = sqrt(q->x * q->x + q->y * q->y + q->z * q->z);
     norm_inv = 1 / norm;

@@ -3,7 +3,8 @@
 #include "../include/i2c.h"
 #include "../lib/quaternion/quaternion.h"
 #include "driver/i2c.h"
-
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 void collect_data(float* collected_values) {
     const uint8_t reg_addr = MPU6050_ACCEL_XOUT_H;
@@ -42,7 +43,7 @@ void task_collect_compute(void* pvParameters) {
         collect_data(values);
         
         compute_data(&q, values, dt);
-        xQueueOverwrite( (QueueHandle_t*)pvParameters, &q );
+        xQueueOverwrite( (QueueHandle_t)pvParameters, &q );
         
         vTaskDelayUntil(&lastWakeTime, period);
     }

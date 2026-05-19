@@ -1,5 +1,6 @@
 #include "../lib/quaternion/quaternion.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "../include/format_send.h"
 
 void format_data(quaternion* q, axis_angle* aa) {
@@ -17,7 +18,7 @@ void task_format_send(void* pvParameters) {
     axis_angle axis_angle_recovered;
 
     while(1) {
-        xQueuePeek( (QueueHandle_t*)pvParameters, &q_send, portMAX_DELAY );
+        xQueuePeek( (QueueHandle_t)pvParameters, &q_send, portMAX_DELAY );
 
         format_data(&q_send, &axis_angle_recovered);
 
