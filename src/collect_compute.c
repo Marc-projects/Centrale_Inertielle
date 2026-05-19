@@ -32,9 +32,9 @@ void compute_data(quaternion* q, float* values, uint8_t dt) {
 }
 
 void task_collect_compute(void* pvParameters) {
-    const TickType_t period = pdMS_TO_TICKS(TIME_CONSTANT_MS);
+    const TickType_t period = pdMS_TO_TICKS(TIME_PERIOD_CONSTANT_MS);
     TickType_t lastWakeTime = xTaskGetTickCount();
-    const uint8_t dt = TIME_CONSTANT_MS;
+    const uint8_t dt = TIME_PERIOD_CONSTANT_MS;
     float values[6];
     quaternion q = {1.0f, 0.0f, 0.0f, 0.0f};
     
