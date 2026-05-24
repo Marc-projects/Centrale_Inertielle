@@ -24,14 +24,36 @@ void collect_data(float* collected_values, i2c_master_dev_handle_t device) {
         collected_values[1] = ((int16_t)((collected_data[2] << 8) | collected_data[3]))/16384.0f; //accel_y
         collected_values[2] = ((int16_t)((collected_data[4] << 8) | collected_data[5]))/16384.0f; //accel_z
         
-        collected_values[3]  = ((int16_t)((collected_data[8] << 8) | collected_data[9]))/7509.9f - 0.005f; //gyro_x + biais
+        collected_values[3]  = ((int16_t)((collected_data[8] << 8) | collected_data[9]))/7509.9f; //gyro_x
         collected_values[4]  = ((int16_t)((collected_data[10] << 8) | collected_data[11]))/7509.9f; //gyro_y
-        collected_values[5]  = ((int16_t)((collected_data[12] << 8) | collected_data[13]))/7509.9f + 0.04f; //gyro_z + biais
+        collected_values[5]  = ((int16_t)((collected_data[12] << 8) | collected_data[13]))/7509.9f; //gyro_z
     }
 }
 
-void compute_data(quaternion* q, float* values, uint8_t dt) {
-    quaternion q_rotation_speed = {0.0f, values[3], values[4], values[5]}, q_temp;
+void init_bias(float* bias, i2c_master_dev_handle_t device, TickType_t* lastWakeTime, TickType_t period) {
+    int init_count, init_length = NBR_INIT_CYCLE, i;
+    float data[6];
+
+    for (init_count = 0; init_count < init_length; init_count++) {
+        collect_data(data, device);
+        
+        for (i = 0; i < 6; i++) {
+            if(i == 2) {
+                data[i] -= 1.0f;
+            }
+
+            bias[i] += data[i];
+        }
+        vTaskDelayUntil(lastWakeTime, period);
+    }
+
+    for (i = 0; i < 6; i++) {
+        bias[i] /= (float)init_length;
+    }
+}
+
+void compute_data(quaternion* q, float* values, uint8_t dt, float* bias) {
+    quaternion q_rotation_speed = {0.0f, values[3] - bias[3], values[4] - bias[4], values[5] - bias[5]}, q_temp;
 
     quaternion_product(q, &q_rotation_speed, &q_temp);
     quaternion_scalar_product(&q_temp, 1.0f/2.0f * (float)dt * 1e-3, &q_temp);
@@ -43,15 +65,17 @@ void task_collect_compute(void* pvParameters) {
     const TickType_t period = pdMS_TO_TICKS(TIME_PERIOD_CONSTANT_MS);
     TickType_t lastWakeTime = xTaskGetTickCount();
     const uint8_t dt = TIME_PERIOD_CONSTANT_MS;
-    float values[6];
+    float values[6], bias[6];
     quaternion q = {1.0f, 0.0f, 0.0f, 0.0f};
     QueueHandle_t queue = ((handle_structure*)pvParameters)->queue;
     i2c_master_dev_handle_t device = ((handle_structure*)pvParameters)->device;
 
+    init_bias(bias, device, &lastWakeTime, period);
+
     while(1) {
         collect_data(values, device);
         
-        compute_data(&q, values, dt);
+        compute_data(&q, values, dt, bias);
         xQueueOverwrite( queue, &q );
         
         vTaskDelayUntil(&lastWakeTime, period);
