@@ -27,6 +27,20 @@ void quaternion_addition(quaternion* q1, quaternion* q2, quaternion* out) {
     out->z = q1->z + q2->z;
 }
 
+void quaternion_subtraction(quaternion* q1, quaternion* q2, quaternion* out) {
+    out->w = q1->w - q2->w;
+    out->x = q1->x - q2->x;
+    out->y = q1->y - q2->y;
+    out->z = q1->z - q2->z;
+}
+
+
+float quaternion_norm(quaternion* q) {
+    float norm_squared = q->w * q->w + q->x * q->x + q->y * q->y + q->z * q->z;
+
+    return sqrtf(norm_squared);
+}
+
 void quaternion_normalize(quaternion* q, quaternion* out) {
     float norm_squared = q->w * q->w + q->x * q->x + q->y * q->y + q->z * q->z;
 

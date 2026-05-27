@@ -6,6 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "../include/main.h"
+#include <math.h>
 
 void collect_data(float* collected_values, i2c_master_dev_handle_t device) {
     const uint8_t reg_addr = MPU6050_ACCEL_XOUT_H;
@@ -52,11 +53,57 @@ void init_bias(float* bias, i2c_master_dev_handle_t device, TickType_t* lastWake
     }
 }
 
+void compute_gradient_descent_correction(quaternion* q, quaternion* q_acceleration, quaternion* out) {
+    float norm = sqrtf(q_acceleration->x*q_acceleration->x + q_acceleration->y*q_acceleration->y + q_acceleration->z*q_acceleration->z);
+    if (norm == 0.0f) return;
+    q_acceleration->x /= norm; q_acceleration->y /= norm; q_acceleration->z /= norm;
+
+    float _2q0 = 2.0f * q->w;
+    float _2q1 = 2.0f * q->x;
+    float _2q2 = 2.0f * q->y;
+    float _2q3 = 2.0f * q->z;
+    float _4q1 = 4.0f * q->x;
+    float _4q2 = 4.0f * q->y;
+    float _2q1q3 = 2.0f * q->x * q->z;
+    float _2q0q2 = 2.0f * q->w * q->y;
+    float _2q0q1 = 2.0f * q->w * q->x;
+    float _2q2q3 = 2.0f * q->y * q->z;
+
+    float fx = _2q1q3 - _2q0q2 - q_acceleration->x;
+    float fy = _2q0q1 + _2q2q3 - q_acceleration->y;
+    float fz = 1.0f - 2.0f * (q->x * q->x + q->y * q->y) - q_acceleration->z;
+
+    out->w = -_2q2 * fx + _2q1 * fy;
+    out->x =  _2q3 * fx + _2q0 * fy - _4q1 * fz;
+    out->y = -_2q0 * fx + _2q3 * fy - _4q2 * fz;
+    out->z =  _2q1 * fx + _2q2 * fy;
+
+    float s_norm = sqrtf(out->w*out->w + out->x*out->x + out->y*out->y + out->z*out->z);
+    if (s_norm > 0.0f) {
+        out->w /= s_norm; out->x /= s_norm; out->y /= s_norm; out->z /= s_norm;
+    }
+}
+
 void compute_data(quaternion* q, float* values, uint8_t dt, float* bias) {
-    quaternion q_rotation_speed = {0.0f, values[3] - bias[3], values[4] - bias[4], values[5] - bias[5]}, q_temp;
+    quaternion q_rotation_speed = {0.0f, values[3] - bias[3], values[4] - bias[4], values[5] - bias[5]},
+                q_acceleration = {0.0f, values[0] - bias[0], values[1] - bias[1], values[2] - bias[2]},                      
+                q_temp, q_gradient = {0.0f, 0.0f, 0.0f, 0.0f};
+    static int compteur = 0;
+
+    compteur++;
+    if (compteur == 5) {
+        compteur = 0;
+        float q_norm = quaternion_norm(&q_acceleration);
+        if (0.8f <= q_norm && q_norm <= 1.2f) {
+            compute_gradient_descent_correction(q, &q_acceleration, &q_gradient);
+        }
+    }
 
     quaternion_product(q, &q_rotation_speed, &q_temp);
-    quaternion_scalar_product(&q_temp, 1.0f/2.0f * (float)dt * 1e-3, &q_temp);
+    quaternion_scalar_product(&q_temp, 1.0f/2.0f, &q_temp);
+    quaternion_scalar_product(&q_gradient, -GRADIENT_DESCENT_STEP, &q_gradient);
+    quaternion_addition(&q_temp, &q_gradient, &q_temp);
+    quaternion_scalar_product(&q_temp, (float)dt * 1e-3, &q_temp);
     quaternion_addition(q, &q_temp, q);
     quaternion_normalize(q, q);
 }

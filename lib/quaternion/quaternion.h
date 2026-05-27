@@ -21,6 +21,10 @@ void quaternion_scalar_product(quaternion* q1, float a, quaternion* out);
 
 void quaternion_addition(quaternion* q1, quaternion* q2, quaternion* out);
 
+void quaternion_subtraction(quaternion* q1, quaternion* q2, quaternion* out);
+
+float quaternion_norm(quaternion* q);
+
 void quaternion_normalize(quaternion* q, quaternion* out);
 
 void quaternion_recover_axis_angle(quaternion* q, axis_angle* aa);
