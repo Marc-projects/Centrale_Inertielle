@@ -123,7 +123,7 @@ $$\begin{bmatrix} v_1 \\ v_2 \\ v_3 \end{bmatrix} = \frac{1}{\sqrt{q_1^2 + q_2^2
 # 3. Embedded Software Architecture
 
 The firmware is developed on top of the **FreeRTOS** real-time operating system native to the **ESP-IDF** environment. Implementing a preemptive architecture guarantees strict temporal determinism required for real-time signal fusion computations.
-```mermaid
+```text
  [ Hardware I2C Bus (MPU6050) ]
                      │
                      ▼ (Hardware sampling clocked at 500 Hz)
