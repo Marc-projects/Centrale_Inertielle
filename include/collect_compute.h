@@ -8,6 +8,7 @@
 #define TIME_PERIOD_CONSTANT_MS 2
 #define NBR_INIT_CYCLE 20
 #define GRADIENT_DESCENT_STEP 0.041f
+#define ACCEL_GRAVITY_MARGIN 0.2f
 
 void collect_data(float* collected_values, i2c_master_dev_handle_t device);
 

@@ -29,4 +29,6 @@ void quaternion_normalize(quaternion* q, quaternion* out);
 
 void quaternion_recover_axis_angle(quaternion* q, axis_angle* aa);
 
+void compute_gradient_descent_correction(quaternion* q, quaternion* q_acceleration, quaternion* out);
+
 #endif

@@ -70,3 +70,36 @@ void quaternion_recover_axis_angle(quaternion* q, axis_angle* aa) {
     aa->v2 = q->y * norm_inv;
     aa->v3 = q->z * norm_inv;
 }
+
+void compute_gradient_descent_correction(quaternion* q, quaternion* q_acceleration, quaternion* out) {
+    float norm = sqrtf(q_acceleration->x*q_acceleration->x + q_acceleration->y*q_acceleration->y + q_acceleration->z*q_acceleration->z);
+    if (norm == 0.0f) return;
+    float ax = q_acceleration->x / norm;
+    float ay = q_acceleration->y / norm;
+    float az = q_acceleration->z / norm;
+
+    float _2q0 = 2.0f * q->w;
+    float _2q1 = 2.0f * q->x;
+    float _2q2 = 2.0f * q->y;
+    float _2q3 = 2.0f * q->z;
+    float _4q1 = 4.0f * q->x;
+    float _4q2 = 4.0f * q->y;
+    float _2q1q3 = 2.0f * q->x * q->z;
+    float _2q0q2 = 2.0f * q->w * q->y;
+    float _2q0q1 = 2.0f * q->w * q->x;
+    float _2q2q3 = 2.0f * q->y * q->z;
+
+    float fx = _2q1q3 - _2q0q2 - ax;
+    float fy = _2q0q1 + _2q2q3 - ay;
+    float fz = 1.0f - 2.0f * (q->x * q->x + q->y * q->y) - az;
+
+    out->w = -_2q2 * fx + _2q1 * fy;
+    out->x =  _2q3 * fx + _2q0 * fy - _4q1 * fz;
+    out->y = -_2q0 * fx + _2q3 * fy - _4q2 * fz;
+    out->z =  _2q1 * fx + _2q2 * fy;
+
+    float out_norm = sqrtf(out->w*out->w + out->x*out->x + out->y*out->y + out->z*out->z);
+    if (out_norm > 0.0f) {
+        out->w /= out_norm; out->x /= out_norm; out->y /= out_norm; out->z /= out_norm;
+    }
+}
