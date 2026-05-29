@@ -44,10 +44,10 @@ The internal registers of the MPU6050 are refreshed using a sequential burst rea
 ```
 
 ### 1.3.2 Full-Scale Ranges and Conversion Factors
-1. **Accelerometer**: Configured by default to a $\pm 2\text{ g}$ range. Since the Analog-to-Digital Converter (ADC) outputs 16-bit signed integers ($\pm 32768$), the sensor sensitivity is $16384\text{ LSB/g}$.
-   $$a_{\text{physical}} = \frac{\text{Value}}{16384.0}$$
-2. **Gyroscope**: Configured by default to a $\pm 250^\circ/\text{s}$ range. With a 16-bit signed raw output, the factory scale factor yields $131\text{ LSB}/(^\circ/\text{s})$. To obtain the angular velocity directly in radians per second ($\text{rad/s}$), the application applies a unified conversion constant of $7509.9\text{ LSB}/(\text{rad/s})$:
-   $$\omega_{\text{physical}} = \frac{\text{Value}}{7509.9}$$
+1. **Accelerometer**: Configured by default to a $\pm 2\text{ g}$ range. Since the Analog-to-Digital Converter (ADC) outputs 16-bit signed integers ($\pm 32768$), the sensor sensitivity is $16384\text{ LSB/g}$ :
+$$a_{\text{physical}} = \frac{\text{Value}}{16384.0}$$
+2. **Gyroscope**: Configured by default to a $\pm 250^\circ/\text{s}$ range. With a 16-bit signed raw output, the factory scale factor yields $131\text{ LSB}/(^\circ/\text{s})$. To obtain the angular velocity directly in radians per second ($\text{rad/s}$), the application applies a unified conversion constant of $7509.9\text{ LSB}/(\text{rad/s})$ :
+$$\omega_{\text{physical}} = \frac{\text{Value}}{7509.9}$$
 
 # 2. Mathematical Modeling and Signal Processing
 
@@ -69,9 +69,13 @@ Discrete numerical integration over the sampling period $\Delta t$ yields:
 $$\mathbf{q}_{\omega, t} = \mathbf{q}_{t-1} + \dot{\mathbf{q}}_{\omega, t} \cdot \Delta t$$
 
 ## 2.2 Gradient Descent Correction (Gravity Alignment)
-Because gyroscopes suffer from slow runtime drift (bias), it is necessary to counteract this divergence by using the accelerometer as an absolute reference of the gravity vector $\mathbf{g} = \begin{bmatrix} 0 & 0 & 1 \end{bmatrix}^T$ in the fixed earth frame.
+Because gyroscopes suffer from slow runtime drift (bias), it is necessary to counteract this divergence by using the accelerometer as an absolute reference of the gravity vector 
+$$\mathbf{g} = \begin{bmatrix} 0 & 0 & 1 \end{bmatrix}^T$$ 
+in the fixed earth frame.
 
-The goal is to minimize the objective error function $\mathbf{f}(\mathbf{q}, \hat{\mathbf{a}})$, which measures the discrepancy between the projected theoretical gravity vector and the actual normalized accelerometer measurement $\hat{\mathbf{a}} = \begin{bmatrix} a_x & a_y & a_z \end{bmatrix}^T$:
+The goal is to minimize the objective error function $\mathbf{f}(\mathbf{q}, \hat{\mathbf{a}})$, which measures the discrepancy between the projected theoretical gravity vector and the actual normalized accelerometer measurement 
+$$\hat{\mathbf{a}} = \begin{bmatrix} a_x & a_y & a_z \end{bmatrix}^T$$
+
 
 $$\mathbf{f}(\mathbf{q}, \hat{\mathbf{a}}) = \begin{bmatrix}
 2(q_1q_3 - q_0q_2) - a_x \\
@@ -115,7 +119,9 @@ $$\mathbf{q}_{t} = \mathbf{q}_{t-1} + \dot{\mathbf{q}}_{\text{fusion}} \cdot \De
 $$\mathbf{q}_{\text{final}} = \frac{\mathbf{q}_{t}}{\|\mathbf{q}_{t}\|}$$
 
 ## 2.4 Geometric Conversion to Axis-Angle Representation
-For downstream data export and real-time graphic processing, the orientation represented by the quaternion $\mathbf{q} = \begin{bmatrix} q_0 & q_1 & q_2 & q_3 \end{bmatrix}^T$ is converted into Axis-Angle space $(\theta, v_1, v_2, v_3)$:
+For downstream data export and real-time graphic processing, the orientation represented by the quaternion 
+$$\mathbf{q} = \begin{bmatrix} q_0 & q_1 & q_2 & q_3 \end{bmatrix}^T$$
+is converted into Axis-Angle space $(\theta, v_1, v_2, v_3)$:
 
 $$\theta = 2 \cdot \text{atan2}\left(\sqrt{q_1^2 + q_2^2 + q_3^2}, q_0\right)$$
 $$\begin{bmatrix} v_1 \\ v_2 \\ v_3 \end{bmatrix} = \frac{1}{\sqrt{q_1^2 + q_2^2 + q_3^2}} \begin{bmatrix} q_1 \\ q_2 \\ q_3 \end{bmatrix}$$
@@ -179,11 +185,15 @@ The software validation suite is divided into four main categories:
 
 1. **Linear Algebraic Operations**: Validation of baseline geometric primitives: `quaternion_addition`, `quaternion_subtraction`, and `quaternion_scalar_product`.
 2. **Spatial Composition (Hamilton Product)**:
-   * *Identity element test*: Verifies that multiplication by the identity quaternion $\mathbf{q}_{\text{id}} = \begin{bmatrix} 1 & 0 & 0 & 0 \end{bmatrix}^T$ does not alter spatial orientation.
+   * *Identity element test*: Verifies that multiplication by the identity quaternion 
+   $$\mathbf{q}_{\text{id}} = \begin{bmatrix} 1 & 0 & 0 & 0 \end{bmatrix}^T$$
+   does not alter spatial orientation.
    * *Rotation composition test*: Sequences a pure $90^\circ$ rotation about the $Z$-axis followed by a $90^\circ$ rotation about the $Y$-axis, evaluated against a strict numerical tolerance ($\le 10^{-4}$).
 3. **Numerical Robustness and Boundary Cases**:
    * Validation of Euclidean norm evaluations.
-   * *Anti-division-by-zero protection*: Validates the `quaternion_normalize` function. If the input vector exhibits a zero or near-zero norm ($\le 10^{-6}$), the algorithm catches the exception and safe-fails the quaternion back to the identity state $\begin{bmatrix} 1 & 0 & 0 & 0 \end{bmatrix}^T$, preventing runtime hardware crashes caused by `NaN` (Not a Number) propagating through registers.
+   * *Anti-division-by-zero protection*: Validates the `quaternion_normalize` function. If the input vector exhibits a zero or near-zero norm ($\le 10^{-6}$), the algorithm catches the exception and safe-fails the quaternion back to the identity state 
+   $$\begin{bmatrix} 1 & 0 & 0 & 0 \end{bmatrix}^T$$
+   , preventing runtime hardware crashes caused by `NaN` (Not a Number) propagating through registers.
 4. **Specific Algorithmic Validation**:
    * *Perfect Alignment*: Verifies that the error gradient evaluates to exactly zero when the sensor is stationary and aligned perfectly with the theoretical model orientation.
    * *Dynamic Increment*: Verifies that a non-zero, directional correction vector is properly generated whenever the estimated quaternion deviates from the gravitational reference read by the accelerometer.
