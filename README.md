@@ -45,8 +45,11 @@ The internal registers of the MPU6050 are refreshed using a sequential burst rea
 
 ### 1.3.2 Full-Scale Ranges and Conversion Factors
 1. **Accelerometer**: Configured by default to a $\pm 2\text{ g}$ range. Since the Analog-to-Digital Converter (ADC) outputs 16-bit signed integers ($\pm 32768$), the sensor sensitivity is $16384\text{ LSB/g}$ :
+
 $$a_{\text{physical}} = \frac{\text{Value}}{16384.0}$$
+
 2. **Gyroscope**: Configured by default to a $\pm 250^\circ/\text{s}$ range. With a 16-bit signed raw output, the factory scale factor yields $131\text{ LSB}/(^\circ/\text{s})$. To obtain the angular velocity directly in radians per second ($\text{rad/s}$), the application applies a unified conversion constant of $7509.9\text{ LSB}/(\text{rad/s})$ :
+
 $$\omega_{\text{physical}} = \frac{\text{Value}}{7509.9}$$
 
 # 2. Mathematical Modeling and Signal Processing
@@ -70,12 +73,14 @@ $$\mathbf{q}_{\omega, t} = \mathbf{q}_{t-1} + \dot{\mathbf{q}}_{\omega, t} \cdot
 
 ## 2.2 Gradient Descent Correction (Gravity Alignment)
 Because gyroscopes suffer from slow runtime drift (bias), it is necessary to counteract this divergence by using the accelerometer as an absolute reference of the gravity vector 
+
 $$\mathbf{g} = \begin{bmatrix} 0 & 0 & 1 \end{bmatrix}^T$$ 
+
 in the fixed earth frame.
 
 The goal is to minimize the objective error function $\mathbf{f}(\mathbf{q}, \hat{\mathbf{a}})$, which measures the discrepancy between the projected theoretical gravity vector and the actual normalized accelerometer measurement 
-$$\hat{\mathbf{a}} = \begin{bmatrix} a_x & a_y & a_z \end{bmatrix}^T$$
 
+$$\hat{\mathbf{a}} = \begin{bmatrix} a_x & a_y & a_z \end{bmatrix}^T$$
 
 $$\mathbf{f}(\mathbf{q}, \hat{\mathbf{a}}) = \begin{bmatrix}
 2(q_1q_3 - q_0q_2) - a_x \\
@@ -120,7 +125,9 @@ $$\mathbf{q}_{\text{final}} = \frac{\mathbf{q}_{t}}{\|\mathbf{q}_{t}\|}$$
 
 ## 2.4 Geometric Conversion to Axis-Angle Representation
 For downstream data export and real-time graphic processing, the orientation represented by the quaternion 
+
 $$\mathbf{q} = \begin{bmatrix} q_0 & q_1 & q_2 & q_3 \end{bmatrix}^T$$
+
 is converted into Axis-Angle space $(\theta, v_1, v_2, v_3)$:
 
 $$\theta = 2 \cdot \text{atan2}\left(\sqrt{q_1^2 + q_2^2 + q_3^2}, q_0\right)$$
